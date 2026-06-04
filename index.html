@@ -25,21 +25,20 @@
 <div class="app-viewport">
     <div class="app-container">
         
-        <!-- פלוס צף לניהול מילים -->
-        <button onclick="switchScreen('createWord')" class="absolute top-3 left-4 bg-rose-500 text-white w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shadow-lg cursor-pointer z-50 hover:scale-105 active:scale-95 transition-transform">
-          ➕
-        </button>
-
         <!-- סרגל עליון -->
-        <header class="flex justify-between items-center p-4 border-b-2 border-slate-100">
-          <div class="bg-indigo-50 border-2 border-indigo-600 rounded-full px-4 py-1 flex items-center gap-2">
+        <header class="flex justify-between items-center gap-2 p-4 border-b-2 border-slate-100">
+          <div class="bg-indigo-50 border-2 border-indigo-600 rounded-full px-4 py-1 flex items-center gap-2 shrink-0">
             <span class="text-lg">💎</span>
             <span id="diamond-count" class="font-bold text-indigo-600 text-lg">20</span>
           </div>
-          <div class="flex items-center gap-1.5 font-bold text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg min-w-0">
             <span>נושא:</span>
-            <span id="current-subject-badge">VOCABULARY</span>
+            <span id="current-subject-badge" class="truncate">VOCABULARY</span>
           </div>
+          <!-- כפתור ניהול מילים -->
+          <button onclick="switchScreen('createWord')" title="ניהול מילים" class="bg-rose-500 text-white w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-transform shrink-0">
+            ➕
+          </button>
         </header>
 
         <!-- ניווט -->
