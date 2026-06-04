@@ -277,6 +277,37 @@ function switchScreen(screenId) {
     }
 }
 
+// היסט כל אביזר ביחס לפינת תיבת האוואטר (80x80), כדי שייראה "לבוש" עליו
+const PIECE_OFFSETS = {
+    hair:    { left: 0,   top: -22 },
+    cloth:   { left: 0,   top: 24  },
+    shoes:   { left: 0,   top: 56  },
+    glasses: { left: 10,  top: 10  },
+    crown:   { left: 10,  top: -30 },
+    pet:     { left: 88,  top: 18  },
+    friend:  { left: -90, top: 0   }
+};
+
+// ממקם אביזר על האוואטר במקומו הנוכחי (כשלובשים אותו), בתוך גבולות החלון
+function snapPieceToAvatar(layer) {
+    const piece = document.getElementById(`piece-${layer}`);
+    const avatar = document.getElementById('piece-avatar');
+    const canvas = document.getElementById('room-canvas-element');
+    const offset = PIECE_OFFSETS[layer];
+    if (!piece || !avatar || !canvas || !offset) return;
+
+    let left = avatar.offsetLeft + offset.left;
+    let top = avatar.offsetTop + offset.top;
+    const maxLeft = canvas.clientWidth - piece.clientWidth;
+    const maxTop = canvas.clientHeight - piece.clientHeight;
+    left = Math.max(0, Math.min(left, maxLeft));
+    top = Math.max(0, Math.min(top, maxTop));
+
+    piece.style.left = left + 'px';
+    piece.style.top = top + 'px';
+    piece.style.bottom = 'auto';
+}
+
 function renderCloset() {
     const container = document.getElementById('closet-container'); if(!container) return;
     container.innerHTML = '';
@@ -295,10 +326,13 @@ function renderCloset() {
                 activeOutfit.background = isEquipped ? 'canvas-default' : item.visual;
                 activeOutfit.env = isEquipped ? '☁️' : item.env;
                 activeOutfit.envLeft = isEquipped ? '⭐' : '🌟';
+                updateHeaderStats();
             } else {
                 activeOutfit[item.layer] = isEquipped ? '' : item.visual;
+                updateHeaderStats();
+                // כשלובשים פריט - להצמיד אותו לאוואטר במקומו הנוכחי
+                if (!isEquipped) snapPieceToAvatar(item.layer);
             }
-            updateHeaderStats();
         };
         container.appendChild(btn);
     });

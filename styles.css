@@ -75,12 +75,12 @@ body {
 }
 .draggable-piece:active { cursor: grabbing; scale: 1.1; z-index: 100 !important; }
 
-/* גדלים מתוקנים לתווי האמוג'י */
-.size-avatar { font-size: 4.5rem; width: 80px; height: 80px; }
-.size-hair { font-size: 4.5rem; z-index: 45; width: 80px; height: 80px; } 
-.size-cloth { font-size: 4.2rem; z-index: 40; width: 80px; height: 80px; }
-.size-shoes { font-size: 2rem; z-index: 35; width: 80px; height: 30px; display: flex; gap: 4px; }
-.size-glasses { font-size: 2.5rem; z-index: 50; width: 60px; height: 40px; }
-.size-crown { font-size: 2.8rem; z-index: 55; width: 60px; height: 40px; }
+/* גדלים מתוקנים לתווי האמוג'י - האוואטר הוא דמות הבסיס, והאביזרים פרופורציונליים אליו */
+.size-avatar { font-size: 5rem; width: 80px; height: 80px; }
+.size-hair { font-size: 4.6rem; z-index: 45; width: 80px; height: 80px; }
+.size-cloth { font-size: 3.2rem; z-index: 40; width: 80px; height: 80px; }
+.size-shoes { font-size: 1.7rem; z-index: 35; width: 80px; height: 30px; display: flex; gap: 4px; }
+.size-glasses { font-size: 1.8rem; z-index: 50; width: 60px; height: 40px; }
+.size-crown { font-size: 2rem; z-index: 55; width: 60px; height: 40px; }
 .size-pet { font-size: 3.5rem; z-index: 30; width: 70px; height: 70px; }
-.size-friend { font-size: 4.5rem; z-index: 9; width: 80px; height: 80px; }
+.size-friend { font-size: 5rem; z-index: 9; width: 80px; height: 80px; }
