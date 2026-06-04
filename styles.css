@@ -28,11 +28,11 @@ body {
     background-color: #f0efff !important;
 }
 
-/* חלון העולם המוגדל */
-.room-canvas {
+/* במת הדמות */
+.room-stage {
     position: relative;
     width: 100%;
-    height: 340px;
+    height: 320px;
     border-radius: 28px;
     overflow: hidden;
     border: 4px solid #e2e8f0;
@@ -41,6 +41,8 @@ body {
     background-repeat: no-repeat;
     transition: background 0.4s ease;
     z-index: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* עולמות ורקעים */
@@ -63,24 +65,88 @@ body {
 .canvas-beach { background: linear-gradient(to bottom, #38bdf8, #bae6fd, #fef08a); border-bottom: 24px solid #eab308; }
 .canvas-forest { background: linear-gradient(to bottom, #7dd3fc, #bbf7d0, #4ade80); border-bottom: 22px solid #15803d; }
 
-/* אלמנטים נפרדים וגרירים לחלוטין - תיקון גדלים קריטי */
-.draggable-piece {
+/* קרקע בתחתית הבמה */
+.stage-ground {
     position: absolute;
-    cursor: grab;
-    user-select: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    left: 0; right: 0; bottom: 0;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.10);
+    border-top: 3px solid rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* אמוג'י רקע מרחפים */
+.ambient { position: absolute; pointer-events: none; z-index: 3; }
+.ambient-right { top: 16px; right: 22px; font-size: 1.9rem; opacity: .7;  animation: floaty 4s ease-in-out infinite; }
+.ambient-left  { top: 30px; left: 22px;  font-size: 1.5rem; opacity: .55; animation: floaty 5s ease-in-out infinite .8s; }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* הדמות - ערימת שכבות ממורכזת בתחתית הבמה */
+.character {
+    position: absolute;
+    left: 50%; bottom: 38px;
+    width: 110px; height: 150px;
+    transform: translateX(-50%);
+    transform-origin: bottom center;
+    animation: idle-bob 3s ease-in-out infinite;
+    cursor: pointer;
     z-index: 10;
 }
-.draggable-piece:active { cursor: grabbing; scale: 1.1; z-index: 100 !important; }
+.character.cheer { animation: cheer-jump .65s ease; }
+@keyframes idle-bob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-6px); }
+}
+@keyframes cheer-jump {
+    0%   { transform: translateX(-50%) translateY(0)    scale(1); }
+    30%  { transform: translateX(-50%) translateY(-28px) scale(1.08); }
+    55%  { transform: translateX(-50%) translateY(0)    scale(.95); }
+    75%  { transform: translateX(-50%) translateY(-8px)  scale(1.02); }
+    100% { transform: translateX(-50%) translateY(0)    scale(1); }
+}
 
-/* גדלים מתוקנים לתווי האמוג'י - האוואטר הוא דמות הבסיס, והאביזרים פרופורציונליים אליו */
-.size-avatar { font-size: 5rem; width: 80px; height: 80px; }
-.size-hair { font-size: 4.6rem; z-index: 45; width: 80px; height: 80px; }
-.size-cloth { font-size: 3.2rem; z-index: 40; width: 80px; height: 80px; }
-.size-shoes { font-size: 1.7rem; z-index: 35; width: 80px; height: 30px; display: flex; gap: 4px; }
-.size-glasses { font-size: 1.8rem; z-index: 50; width: 60px; height: 40px; }
-.size-crown { font-size: 2rem; z-index: 55; width: 60px; height: 40px; }
-.size-pet { font-size: 3.5rem; z-index: 30; width: 70px; height: 70px; }
-.size-friend { font-size: 5rem; z-index: 9; width: 80px; height: 80px; }
+/* שכבות לבוש - ממורכזות, כל אחת בגובה המתאים על הדמות */
+.char-slot {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; justify-content: center; align-items: center;
+    line-height: 1; white-space: nowrap; pointer-events: none;
+}
+.slot-avatar  { bottom: 0;    font-size: 5.6rem; z-index: 10; }
+.slot-shoes   { bottom: 2px;  font-size: 1.6rem; z-index: 25; letter-spacing: 2px; }
+.slot-cloth   { bottom: 20px; font-size: 3rem;   z-index: 20; }
+.slot-glasses { bottom: 54px; font-size: 1.7rem; z-index: 40; }
+.slot-hair    { bottom: 62px; font-size: 2.4rem; z-index: 30; }
+.slot-crown   { bottom: 78px; font-size: 2rem;   z-index: 50; }
+
+/* חיה וחבר - בפינות הבמה */
+.slot-pet    { bottom: 36px; right: 16px; left: auto; transform: none; font-size: 3.2rem; z-index: 8; animation: idle-bob 3.4s ease-in-out infinite .5s; }
+.slot-friend { bottom: 38px; left: 14px;  transform: none; font-size: 4.4rem; z-index: 7; animation: idle-bob 3.2s ease-in-out infinite .3s; }
+
+/* בועת דיבור */
+.speech-bubble {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: #fff; color: #334155; font-weight: 700; font-size: .95rem;
+    padding: 8px 14px; border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,.15);
+    z-index: 70; white-space: nowrap; pointer-events: none;
+}
+.speech-bubble::after {
+    content: ''; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+    border: 7px solid transparent; border-top-color: #fff; border-bottom: 0;
+}
+.speech-bubble.pop { animation: bubble-pop .3s ease; }
+@keyframes bubble-pop {
+    0%   { transform: translateX(-50%) scale(.5); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1);  opacity: 1; }
+}
+
+/* ניצוצות */
+.sparkle { position: absolute; font-size: 1.3rem; pointer-events: none; z-index: 60; animation: sparkle-pop .9s ease forwards; }
+@keyframes sparkle-pop {
+    0%   { transform: scale(0)   translateY(0);    opacity: 0; }
+    30%  { transform: scale(1.2) translateY(-6px);  opacity: 1; }
+    100% { transform: scale(.5)  translateY(-30px); opacity: 0; }
+}
+
+/* כרטיסי ארון נעולים */
+.grayscale { filter: grayscale(1); }

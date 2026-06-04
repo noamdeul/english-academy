@@ -103,6 +103,29 @@ let inventory = readStore('edu_inventory', []);
 let activeOutfit = readStore('edu_outfit', { hair: '', cloth: '', shoes: '', glasses: '', crown: '', pet: '', friend: '', background: 'canvas-default', env: '☁️', envLeft: '⭐' });
 let scoreHistory = readStore('edu_scores', []);
 let deletedDefaultIds = readStore('edu_deleted_ids', []);
+let characterName = localStorage.getItem('edu_char_name') || '';
+if (!activeOutfit.avatar) activeOutfit.avatar = '🧍‍♀️';
+
+// דמויות בסיס לבחירה חופשית (ללא תשלום)
+const baseAvatars = ['🧍‍♀️', '🧍‍♂️', '👧', '👦', '🧒', '👶', '🧚‍♀️', '🦸‍♀️', '🦸‍♂️', '🧑'];
+
+// קטגוריות הארון (טאבים)
+const wardrobeCategories = [
+    { key: 'character',  label: '🙂 דמות' },
+    { key: 'hair',       label: '💇 שיער' },
+    { key: 'cloth',      label: '👗 בגדים' },
+    { key: 'shoes',      label: '👟 נעליים' },
+    { key: 'glasses',    label: '🕶️ משקפיים' },
+    { key: 'crown',      label: '👑 כתרים' },
+    { key: 'pet',        label: '🐾 חיות' },
+    { key: 'friend',     label: '🧑‍🤝‍🧑 חברים' },
+    { key: 'background', label: '🌈 רקעים' }
+];
+let activeWardrobeCat = 'character';
+
+// משפטי שלום באנגלית (גם תרגול קטן!)
+const CHARACTER_CHEERS = ['Hello!', 'Hi there!', 'You are great!', 'I am happy!', "Let's play!", 'I love you!', 'Good job!', 'Yay!'];
+let cheerIndex = 0;
 
 // הסרת מילים שנמחקו בעבר ע"י מבוגר (מתמיד גם אחרי רענון)
 Object.keys(subjectsData).forEach(key => {
@@ -222,15 +245,16 @@ function updateHeaderStats() {
         localStorage.setItem('edu_outfit', JSON.stringify(activeOutfit));
         localStorage.setItem('edu_scores', JSON.stringify(scoreHistory));
         localStorage.setItem('edu_deleted_ids', JSON.stringify(deletedDefaultIds));
+        localStorage.setItem('edu_char_name', characterName);
     } catch (e) {
         console.warn('שמירת המצב נכשלה (ייתכן מצב גלישה פרטית או אחסון מלא):', e);
     }
 
     const dCount = document.getElementById('diamond-count'); if(dCount) dCount.innerText = diamonds;
     const subBadge = document.getElementById('current-subject-badge'); if(subBadge) subBadge.innerText = currentSubject.toUpperCase();
-    
+
     renderAvatarVisuals();
-    renderCloset();
+    renderWardrobe();
     renderShop();
     renderAdminLibrary();
 }
@@ -240,20 +264,86 @@ function selectSubject(subjectKey) {
     showModal(`הנושא שונה בהצלחה ל-${subjectKey.toUpperCase()}! 🎯`); switchScreen('gameModes');
 }
 
+function setSlot(id, content, alwaysShow) {
+    const el = document.getElementById(id); if(!el) return;
+    el.textContent = content || '';
+    el.style.display = (content || alwaysShow) ? 'flex' : 'none';
+}
+
 function renderAvatarVisuals() {
-    const pHair = document.getElementById('piece-hair'); if(pHair) { pHair.innerText = activeOutfit.hair || ''; pHair.style.display = activeOutfit.hair ? 'flex' : 'none'; }
-    const pCloth = document.getElementById('piece-cloth'); if(pCloth) { pCloth.innerText = activeOutfit.cloth || ''; pCloth.style.display = activeOutfit.cloth ? 'flex' : 'none'; }
-    const pShoes = document.getElementById('piece-shoes'); if(pShoes) { pShoes.innerHTML = activeOutfit.shoes ? `<span>${activeOutfit.shoes}</span><span>${activeOutfit.shoes}</span>` : ''; pShoes.style.display = activeOutfit.shoes ? 'flex' : 'none'; }
-    const pGlasses = document.getElementById('piece-glasses'); if(pGlasses) { pGlasses.innerText = activeOutfit.glasses || ''; pGlasses.style.display = activeOutfit.glasses ? 'flex' : 'none'; }
-    const pCrown = document.getElementById('piece-crown'); if(pCrown) { pCrown.innerText = activeOutfit.crown || ''; pCrown.style.display = activeOutfit.crown ? 'flex' : 'none'; }
-    const pPet = document.getElementById('piece-pet'); if(pPet) { pPet.innerText = activeOutfit.pet || ''; pPet.style.display = activeOutfit.pet ? 'flex' : 'none'; }
-    const pFriend = document.getElementById('piece-friend'); if(pFriend) { pFriend.innerText = activeOutfit.friend || ''; pFriend.style.display = activeOutfit.friend ? 'flex' : 'none'; }
-    
-    const canvas = document.getElementById('room-canvas-element');
-    if(canvas) { canvas.className = `room-canvas w-full shadow-md mb-4 ${activeOutfit.background || 'canvas-default'}`; }
-    
-    const ambDec = document.getElementById('ambient-decor'); if(ambDec) ambDec.innerText = activeOutfit.env || '☁️';
-    const ambDecL = document.getElementById('ambient-decor-left'); if(ambDecL) ambDecL.innerText = activeOutfit.envLeft || '⭐';
+    setSlot('slot-avatar', activeOutfit.avatar || '🧍‍♀️', true);
+    setSlot('slot-hair', activeOutfit.hair);
+    setSlot('slot-glasses', activeOutfit.glasses);
+    setSlot('slot-crown', activeOutfit.crown);
+    setSlot('slot-cloth', activeOutfit.cloth);
+    setSlot('slot-shoes', activeOutfit.shoes ? activeOutfit.shoes + activeOutfit.shoes : '');
+    setSlot('slot-pet', activeOutfit.pet);
+    setSlot('slot-friend', activeOutfit.friend);
+
+    const stage = document.getElementById('room-stage');
+    if(stage) stage.className = `room-stage w-full shadow-md mb-3 ${activeOutfit.background || 'canvas-default'}`;
+
+    const ambDec = document.getElementById('ambient-decor'); if(ambDec) ambDec.textContent = activeOutfit.env || '☁️';
+    const ambDecL = document.getElementById('ambient-decor-left'); if(ambDecL) ambDecL.textContent = activeOutfit.envLeft || '⭐';
+
+    const nameInput = document.getElementById('char-name-input');
+    if(nameInput && document.activeElement !== nameInput) nameInput.value = characterName;
+}
+
+// --- אפקטים משעשעים ---
+function burstSparkles() {
+    const stage = document.getElementById('room-stage'); if(!stage) return;
+    for (let i = 0; i < 6; i++) {
+        const s = document.createElement('span');
+        s.className = 'sparkle'; s.textContent = '✨';
+        s.style.left = (32 + Math.random() * 36) + '%';
+        s.style.bottom = (60 + Math.random() * 90) + 'px';
+        s.style.animationDelay = (Math.random() * 0.2) + 's';
+        stage.appendChild(s);
+        setTimeout(() => s.remove(), 950);
+    }
+}
+
+let speechTimer = null;
+function showSpeechBubble(text) {
+    const b = document.getElementById('speech-bubble'); if(!b) return;
+    b.textContent = text;
+    b.classList.remove('hidden-screen');
+    b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+    clearTimeout(speechTimer);
+    speechTimer = setTimeout(() => b.classList.add('hidden-screen'), 2200);
+}
+
+let cheerTimer = null;
+function playCheerAnimation() {
+    const ch = document.getElementById('character');
+    if(!ch) return;
+    ch.classList.remove('cheer'); void ch.offsetWidth; ch.classList.add('cheer');
+    clearTimeout(cheerTimer);
+    cheerTimer = setTimeout(() => ch.classList.remove('cheer'), 700); // לחזור לאנימציית ה-idle
+}
+
+// הקשה על הדמות - קופצת, אומרת שלום באנגלית ומשמיעה קול
+function characterCheer() {
+    playCheerAnimation();
+    burstSparkles();
+    const phrase = CHARACTER_CHEERS[cheerIndex % CHARACTER_CHEERS.length];
+    cheerIndex++;
+    showSpeechBubble(phrase);
+    if ('speechSynthesis' in window) {
+        try {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(phrase.replace(/[^a-zA-Z' ]/g, ''));
+            u.lang = 'en-US'; u.rate = 0.95;
+            window.speechSynthesis.speak(u);
+        } catch (e) { /* ignore */ }
+    }
+}
+
+// מופעל אחרי כל שינוי הלבשה: שמירה + רינדור + אפקט
+function afterOutfitChange(playFx) {
+    updateHeaderStats();
+    if (playFx) { burstSparkles(); playCheerAnimation(); }
 }
 
 function switchScreen(screenId) {
@@ -277,65 +367,129 @@ function switchScreen(screenId) {
     }
 }
 
-// היסט כל אביזר ביחס לפינת תיבת האוואטר (80x80), כדי שייראה "לבוש" עליו
-const PIECE_OFFSETS = {
-    hair:    { left: 0,   top: -22 },
-    cloth:   { left: 0,   top: 24  },
-    shoes:   { left: 0,   top: 56  },
-    glasses: { left: 10,  top: 10  },
-    crown:   { left: 10,  top: -30 },
-    pet:     { left: 88,  top: 18  },
-    friend:  { left: -90, top: 0   }
-};
-
-// ממקם אביזר על האוואטר במקומו הנוכחי (כשלובשים אותו), בתוך גבולות החלון
-function snapPieceToAvatar(layer) {
-    const piece = document.getElementById(`piece-${layer}`);
-    const avatar = document.getElementById('piece-avatar');
-    const canvas = document.getElementById('room-canvas-element');
-    const offset = PIECE_OFFSETS[layer];
-    if (!piece || !avatar || !canvas || !offset) return;
-
-    let left = avatar.offsetLeft + offset.left;
-    let top = avatar.offsetTop + offset.top;
-    const maxLeft = canvas.clientWidth - piece.clientWidth;
-    const maxTop = canvas.clientHeight - piece.clientHeight;
-    left = Math.max(0, Math.min(left, maxLeft));
-    top = Math.max(0, Math.min(top, maxTop));
-
-    piece.style.left = left + 'px';
-    piece.style.top = top + 'px';
-    piece.style.bottom = 'auto';
+// --- ארון הלבשה עם קטגוריות (תאם את renderCloset הישן) ---
+function isItemEquipped(item) {
+    return item.layer === 'background'
+        ? (activeOutfit.background === item.visual)
+        : (activeOutfit[item.layer] === item.visual);
 }
 
-function renderCloset() {
-    const container = document.getElementById('closet-container'); if(!container) return;
-    container.innerHTML = '';
-    if(inventory.length === 0) {
-        container.innerHTML = `<p class="col-span-4 text-center text-xs text-slate-400 py-2">הארון ריק. קנו פריטים בחנות! 🛒</p>`;
+function renderWardrobe() {
+    renderWardrobeTabs();
+    renderWardrobeItems();
+}
+
+function renderWardrobeTabs() {
+    const tabs = document.getElementById('wardrobe-tabs'); if(!tabs) return;
+    tabs.innerHTML = '';
+    wardrobeCategories.forEach(cat => {
+        const active = cat.key === activeWardrobeCat;
+        const b = document.createElement('button');
+        b.className = `flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-500 border border-slate-200'}`;
+        b.textContent = cat.label;
+        b.onclick = () => { activeWardrobeCat = cat.key; renderWardrobe(); };
+        tabs.appendChild(b);
+    });
+}
+
+function makeWardrobeCard({ icon, owned, equipped, price, onPick }) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `relative aspect-square rounded-2xl border-2 flex items-center justify-center cursor-pointer transition-transform active:scale-90 ${equipped ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-300'}`;
+    let badge = '';
+    if (equipped) {
+        badge = `<span class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center shadow">✓</span>`;
+    } else if (!owned) {
+        badge = `<span class="absolute -top-1.5 -right-1.5 bg-amber-400 text-white text-[9px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow">${price}💎</span>`
+              + `<span class="absolute bottom-1 right-1.5 text-[10px]">🔒</span>`;
+    }
+    b.innerHTML = `<span class="text-3xl ${owned ? '' : 'opacity-40 grayscale'}">${icon}</span>${badge}`;
+    b.onclick = onPick;
+    return b;
+}
+
+function renderWardrobeItems() {
+    const grid = document.getElementById('wardrobe-items'); if(!grid) return;
+    grid.innerHTML = '';
+
+    // קטגוריית "דמות" - בחירת דמות בסיס חופשית
+    if (activeWardrobeCat === 'character') {
+        baseAvatars.forEach(em => {
+            grid.appendChild(makeWardrobeCard({
+                icon: em, owned: true, equipped: (activeOutfit.avatar || '🧍‍♀️') === em,
+                onPick: () => { activeOutfit.avatar = em; showSpeechBubble('Hi! 👋'); afterOutfitChange(true); }
+            }));
+        });
         return;
     }
-    inventory.forEach(itemId => {
-        const item = shopItems.find(i => i.id === itemId); if(!item) return;
-        const isEquipped = item.layer === 'background' ? (activeOutfit.background === item.visual) : (activeOutfit[item.layer] === item.visual);
-        const btn = document.createElement('button');
-        btn.className = `p-2 rounded-xl border flex flex-col items-center justify-center text-center cursor-pointer transition-all ${isEquipped ? 'border-indigo-600 bg-indigo-50 font-bold' : 'border-slate-200 bg-white'}`;
-        btn.innerHTML = `<span class="text-xl">${item.icon}</span><span class="text-[9px] text-slate-600 mt-1">${isEquipped ? 'הסר' : 'הלבש'}</span>`;
-        btn.onclick = () => {
-            if(item.layer === 'background') {
-                activeOutfit.background = isEquipped ? 'canvas-default' : item.visual;
-                activeOutfit.env = isEquipped ? '☁️' : item.env;
-                activeOutfit.envLeft = isEquipped ? '⭐' : '🌟';
-                updateHeaderStats();
-            } else {
-                activeOutfit[item.layer] = isEquipped ? '' : item.visual;
-                updateHeaderStats();
-                // כשלובשים פריט - להצמיד אותו לאוואטר במקומו הנוכחי
-                if (!isEquipped) snapPieceToAvatar(item.layer);
-            }
-        };
-        container.appendChild(btn);
+
+    const items = shopItems.filter(i => i.layer === activeWardrobeCat);
+    if (!items.length) {
+        grid.innerHTML = `<p class="col-span-4 text-center text-xs text-slate-400 py-3">אין פריטים בקטגוריה זו.</p>`;
+        return;
+    }
+    items.forEach(item => {
+        const owned = inventory.includes(item.id);
+        grid.appendChild(makeWardrobeCard({
+            icon: item.icon, owned, equipped: isItemEquipped(item), price: item.price,
+            onPick: () => owned ? toggleEquip(item) : tryBuyItem(item)
+        }));
     });
+}
+
+function toggleEquip(item) {
+    const equipped = isItemEquipped(item);
+    if (item.layer === 'background') {
+        activeOutfit.background = equipped ? 'canvas-default' : item.visual;
+        activeOutfit.env = equipped ? '☁️' : item.env;
+        activeOutfit.envLeft = equipped ? '⭐' : '🌟';
+    } else {
+        activeOutfit[item.layer] = equipped ? '' : item.visual;
+    }
+    afterOutfitChange(!equipped); // אפקט רק כשלובשים, לא כשמסירים
+}
+
+function tryBuyItem(item) {
+    if (diamonds < item.price) {
+        showModal("עוד קצת! אין מספיק יהלומים 💎 שחקו במשחקים כדי להרוויח עוד.", 0, '💎');
+        return;
+    }
+    diamonds -= item.price;
+    inventory.push(item.id);
+    if (item.layer === 'background') {
+        activeOutfit.background = item.visual; activeOutfit.env = item.env; activeOutfit.envLeft = '🌟';
+    } else {
+        activeOutfit[item.layer] = item.visual;
+    }
+    afterOutfitChange(true);
+    showModal(`מזל טוב! קיבלת "${item.name}" והוא כבר עליך! 🥳`, 0, '🎁');
+}
+
+function randomizeOutfit() {
+    activeOutfit.avatar = baseAvatars[Math.floor(Math.random() * baseAvatars.length)];
+    ['hair', 'cloth', 'shoes', 'glasses', 'crown', 'pet', 'friend', 'background'].forEach(layer => {
+        const owned = shopItems.filter(i => i.layer === layer && inventory.includes(i.id));
+        if (!owned.length) return;
+        if (layer === 'background') {
+            const pick = owned[Math.floor(Math.random() * owned.length)];
+            activeOutfit.background = pick.visual; activeOutfit.env = pick.env; activeOutfit.envLeft = '🌟';
+        } else if (Math.random() < 0.75) {
+            activeOutfit[layer] = owned[Math.floor(Math.random() * owned.length)].visual;
+        } else {
+            activeOutfit[layer] = '';
+        }
+    });
+    showSpeechBubble('Ta-da! ✨');
+    afterOutfitChange(true);
+}
+
+function resetOutfit() {
+    activeOutfit.hair = activeOutfit.cloth = activeOutfit.shoes = '';
+    activeOutfit.glasses = activeOutfit.crown = activeOutfit.pet = activeOutfit.friend = '';
+    activeOutfit.background = 'canvas-default'; activeOutfit.env = '☁️'; activeOutfit.envLeft = '⭐';
+    activeOutfit.avatar = '🧍‍♀️';
+    showSpeechBubble('All clean! 🧼');
+    afterOutfitChange(false);
 }
 
 function renderShop() {
@@ -715,64 +869,18 @@ function resolveConfirm(ok) {
     if (ok && typeof cb === 'function') cb();
 }
 
-// --- מנגנון גרירה משוחרר לחלוטין ---
-function makeElementDraggable(el) {
-    let isDragging = false;
-    let startX, startY, initialLeft, initialTop;
-    const canvas = document.getElementById('room-canvas-element');
-
-    el.addEventListener('mousedown', dragStart);
-    el.addEventListener('touchstart', dragStart, { passive: true });
-
-    function dragStart(e) {
-        if (e.target.closest('button')) return;
-        
-        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-
-        startX = clientX; startY = clientY;
-        initialLeft = el.offsetLeft; initialTop = el.offsetTop;
-        isDragging = true;
-
-        document.addEventListener('mousemove', dragMove);
-        document.addEventListener('mouseup', dragEnd);
-        document.addEventListener('touchmove', dragMove, { passive: false });
-        document.addEventListener('touchend', dragEnd);
-    }
-
-    function dragMove(e) {
-        if (!isDragging) return;
-        
-        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-
-        const dx = clientX - startX; const dy = clientY - startY;
-        let newLeft = initialLeft + dx; let newTop = initialTop + dy;
-
-        const maxLeft = canvas.clientWidth - el.clientWidth;
-        const maxTop = canvas.clientHeight - el.clientHeight;
-
-        if (newLeft < 0) newLeft = 0; if (newLeft > maxLeft) newLeft = maxLeft;
-        if (newTop < 0) newTop = 0; if (newTop > maxTop) newTop = maxTop;
-
-        el.style.left = newLeft + 'px'; el.style.top = newTop + 'px'; el.style.bottom = 'auto';
-        if(e.cancelable) e.preventDefault();
-    }
-
-    function dragEnd() {
-        isDragging = false;
-        document.removeEventListener('mousemove', dragMove); document.removeEventListener('mouseup', dragEnd);
-        document.removeEventListener('touchmove', dragMove); document.removeEventListener('touchend', dragEnd);
-    }
-}
-
 window.addEventListener('DOMContentLoaded', () => {
     updateHeaderStats(); switchScreen('gameModes');
 
-    ['avatar', 'hair', 'cloth', 'shoes', 'glasses', 'crown', 'pet', 'friend'].forEach(piece => {
-        const target = document.getElementById(`piece-${piece}`);
-        if(target) makeElementDraggable(target);
-    });
+    // שם הדמות - שמירה תוך כדי הקלדה
+    const charName = document.getElementById('char-name-input');
+    if (charName) {
+        charName.value = characterName;
+        charName.addEventListener('input', () => {
+            characterName = charName.value;
+            try { localStorage.setItem('edu_char_name', characterName); } catch (e) { /* ignore */ }
+        });
+    }
 
     // Enter לשליחה בשדות הקלט
     const onEnter = (el, fn) => { if(el) el.addEventListener('keydown', e => { if(e.key === 'Enter') { e.preventDefault(); fn(); } }); };

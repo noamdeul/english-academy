@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="English Academy - משחק לימוד אנגלית לילדים: התאמה, בחירה אמריקאית והכתבה.">
-    <title>English Academy - Vercel Ultimate Edition</title>
+    <title>English Academy</title>
 
     <!-- אייקונים: דפדפן + iOS -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -51,33 +51,54 @@
         <!-- אזור התוכן -->
         <main class="flex-1 p-5 overflow-y-auto">
           
-          <!-- מסך 1: החדר שלי ואזור עיצוב העולם המשודרג -->
-          <div id="screen-menu" class="hidden-screen flex flex-col items-center text-center mt-1">
-            <h2 class="text-xl font-black text-slate-800 mb-3">חדר העיצוב והמשחק שלי 🎨</h2>
-            
-            <div id="room-canvas-element" class="room-canvas w-full shadow-md mb-4 canvas-default">
-                <div id="ambient-decor" class="absolute top-4 right-6 text-3xl opacity-60 pointer-events-none">☁️</div>
-                <div id="ambient-decor-left" class="absolute top-8 left-6 text-2xl opacity-40 pointer-events-none">⭐</div>
-                
-                <!-- מיקומים התחלתיים מתוקנים למרכז הבמה -->
-                <div id="piece-avatar" class="draggable-piece size-avatar" style="top: 130px; left: 170px;"><span>🧍‍♀️</span></div>
-                <div id="piece-hair" class="draggable-piece size-hair" style="top: 100px; left: 170px; display: none;"></div>
-                <div id="piece-cloth" class="draggable-piece size-cloth" style="top: 155px; left: 170px; display: none;"></div>
-                <div id="piece-shoes" class="draggable-piece size-shoes" style="top: 220px; left: 170px; display: none;"></div>
-                <div id="piece-glasses" class="draggable-piece size-glasses" style="top: 125px; left: 180px; display: none;"></div>
-                <div id="piece-crown" class="draggable-piece size-crown" style="top: 70px; left: 180px; display: none;"></div>
-                <div id="piece-friend" class="draggable-piece size-friend" style="top: 130px; left: 60px; display: none;"></div>
-                <div id="piece-pet" class="draggable-piece size-pet" style="top: 160px; left: 270px; display: none;"></div>
+          <!-- מסך 1: החדר שלי - מגרש הלבשה אינטראקטיבי -->
+          <div id="screen-menu" class="hidden-screen flex flex-col items-center mt-1">
+
+            <!-- שם הדמות -->
+            <div class="flex items-center justify-center gap-2 mb-3 w-full">
+                <span class="text-2xl">🎀</span>
+                <input id="char-name-input" maxlength="14" placeholder="הדמות שלי"
+                       class="text-center text-lg font-black text-slate-800 bg-transparent outline-none border-b-2 border-dashed border-slate-200 focus:border-indigo-400 w-40 py-1">
+                <span class="text-slate-300 text-sm">✏️</span>
             </div>
 
-            <p class="text-slate-400 text-[11px] mb-4">⭐ חופש עיצוב מלא! הרקעים קבועים ומסתירים את התכלת, אך האוואטרים והאביזרים זזים בחופשיות.</p>
-            
-            <div class="w-full bg-slate-50 rounded-2xl p-4 border border-slate-100 text-right mb-4">
-                <h4 class="font-bold text-xs text-slate-600 mb-2.5">👔 ארון הפריטים והרקעים שלי (לחצו להצגה/הסרה):</h4>
-                <div id="closet-container" class="grid grid-cols-4 gap-2"></div>
+            <!-- במת הדמות -->
+            <div id="room-stage" class="room-stage w-full shadow-md mb-3 canvas-default" onclick="characterCheer()">
+                <span id="ambient-decor" class="ambient ambient-right">☁️</span>
+                <span id="ambient-decor-left" class="ambient ambient-left">⭐</span>
+
+                <span id="slot-friend" class="char-slot slot-friend" style="display:none;"></span>
+                <span id="slot-pet" class="char-slot slot-pet" style="display:none;"></span>
+
+                <div id="character" class="character">
+                    <span id="slot-crown" class="char-slot slot-crown" style="display:none;"></span>
+                    <span id="slot-hair" class="char-slot slot-hair" style="display:none;"></span>
+                    <span id="slot-avatar" class="char-slot slot-avatar">🧍‍♀️</span>
+                    <span id="slot-glasses" class="char-slot slot-glasses" style="display:none;"></span>
+                    <span id="slot-cloth" class="char-slot slot-cloth" style="display:none;"></span>
+                    <span id="slot-shoes" class="char-slot slot-shoes" style="display:none;"></span>
+                </div>
+
+                <div id="stage-ground" class="stage-ground"></div>
+                <div id="speech-bubble" class="speech-bubble hidden-screen"></div>
             </div>
 
-            <button onclick="switchScreen('subjects')" class="w-full bg-indigo-600 text-white font-bold text-xl py-4 rounded-3xl shadow-lg cursor-pointer hover:bg-indigo-700">
+            <p class="text-slate-400 text-[11px] mb-3 text-center px-2">👆 הקישו על הדמות שתגיד שלום, ובחרו פריטים מהארון כדי להלביש אותה!</p>
+
+            <!-- כפתורי פעולה -->
+            <div class="grid grid-cols-2 gap-2 w-full mb-4">
+                <button onclick="randomizeOutfit()" class="bg-amber-400 text-white font-bold py-3 rounded-2xl shadow-sm hover:brightness-105 active:scale-95 transition-transform">🎲 הפתעה!</button>
+                <button onclick="resetOutfit()" class="bg-slate-100 text-slate-600 font-bold py-3 rounded-2xl shadow-sm hover:bg-slate-200 active:scale-95 transition-transform">🧹 ניקוי</button>
+            </div>
+
+            <!-- ארון בגדים עם קטגוריות -->
+            <div class="w-full bg-slate-50 rounded-2xl p-3 border border-slate-100 mb-4">
+                <h4 class="font-bold text-xs text-slate-600 mb-2 text-right">👗 ארון ההלבשה - הקישו כדי ללבוש:</h4>
+                <div id="wardrobe-tabs" class="flex gap-1.5 overflow-x-auto pb-2"></div>
+                <div id="wardrobe-items" class="grid grid-cols-4 gap-2 mt-1"></div>
+            </div>
+
+            <button onclick="switchScreen('subjects')" class="w-full bg-indigo-600 text-white font-bold text-xl py-4 rounded-3xl shadow-lg cursor-pointer hover:bg-indigo-700 active:scale-95 transition-transform">
               בואו נתאמן! 🚀
             </button>
           </div>
