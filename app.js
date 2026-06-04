@@ -104,10 +104,90 @@ let activeOutfit = readStore('edu_outfit', { hair: '', cloth: '', shoes: '', gla
 let scoreHistory = readStore('edu_scores', []);
 let deletedDefaultIds = readStore('edu_deleted_ids', []);
 let characterName = localStorage.getItem('edu_char_name') || '';
-if (!activeOutfit.avatar) activeOutfit.avatar = '🧍‍♀️';
 
-// דמויות בסיס לבחירה חופשית (ללא תשלום)
-const baseAvatars = ['🧍‍♀️', '🧍‍♂️', '👧', '👦', '🧒', '👶', '🧚‍♀️', '🦸‍♀️', '🦸‍♂️', '🧑'];
+// --- אווטאר מבוסס תמונות (DiceBear avataaars) ---
+const AVATAR_API = 'https://api.dicebear.com/9.x/avataaars/svg';
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/';
+
+// גווני עור לבחירה חופשית (קטגוריית "דמות")
+const SKIN_TONES = ['ffdbb4', 'edb98a', 'd08b5b', 'ae5d29', '614335', 'f8d25c'];
+const DEFAULT_SKIN = 'edb98a';
+if (!SKIN_TONES.includes(activeOutfit.avatar)) activeOutfit.avatar = DEFAULT_SKIN;
+
+// מיפוי פריטי החנות לאפשרויות האווטאר
+const AVATAR_MAP = {
+    // שיער: תסרוקת + צבע
+    hair_pony:    { top: 'straightAndStrand', hairColor: '724133' },
+    hair_braids:  { top: 'bun',               hairColor: 'a55728' },
+    // בגדים: סוג + צבע
+    cloth_dress:  { clothing: 'overall',        clothesColor: 'ff488e' },
+    cloth_pajama: { clothing: 'hoodie',         clothesColor: '3c4f5c' },
+    cloth_summer: { clothing: 'shirtScoopNeck', clothesColor: 'ffafb9' },
+    // משקפיים
+    acc_glasses:  { accessories: 'sunglasses' },
+    // חברים: אווטאר שני נפרד
+    friend_blonde:{ friend: { seed: 'Lily', top: 'longButNotTooLong', hairColor: 'd6b370', clothing: 'shirtScoopNeck', clothesColor: 'ffafb9', skinColor: 'ffdbb4' } },
+    friend_guy:   { friend: { seed: 'Tom',  top: 'shortFlat',         hairColor: '2c1b18', clothing: 'hoodie',         clothesColor: '5199e4', skinColor: 'edb98a' } }
+};
+
+const AVATAR_DEFAULTS = { top: 'shortFlat', hairColor: '724133', clothing: 'shirtCrewNeck', clothesColor: '5199e4' };
+
+// כתובת תמונה של Twemoji מתוך אימוג'י (לכתר/נעליים/חיות)
+function twemojiUrl(emoji) {
+    const cp = [...emoji].filter(c => c.codePointAt(0) !== 0xFE0F).map(c => c.codePointAt(0).toString(16)).join('-');
+    return `${TWEMOJI_BASE}${cp}.svg`;
+}
+
+// מוצא את פריט החנות הלבוש כרגע בשכבה נתונה
+function equippedItemOf(layer) {
+    return shopItems.find(i => i.layer === layer && i.visual === activeOutfit[layer]) || null;
+}
+
+function avatarConfigFor(layer) {
+    const item = equippedItemOf(layer);
+    return item ? AVATAR_MAP[item.id] : null;
+}
+
+// בונה את כתובת תמונת האווטאר הראשי לפי ההלבשה הנוכחית
+function buildAvatarUrl() {
+    const hair = avatarConfigFor('hair');
+    const cloth = avatarConfigFor('cloth');
+    const glasses = avatarConfigFor('glasses');
+    const p = new URLSearchParams();
+    p.set('seed', 'MyStar');
+    p.set('skinColor', SKIN_TONES.includes(activeOutfit.avatar) ? activeOutfit.avatar : DEFAULT_SKIN);
+    p.set('top', (hair && hair.top) || AVATAR_DEFAULTS.top);
+    p.set('topProbability', '100');
+    p.set('hairColor', (hair && hair.hairColor) || AVATAR_DEFAULTS.hairColor);
+    p.set('clothing', (cloth && cloth.clothing) || AVATAR_DEFAULTS.clothing);
+    p.set('clothesColor', (cloth && cloth.clothesColor) || AVATAR_DEFAULTS.clothesColor);
+    if (glasses && glasses.accessories) { p.set('accessories', glasses.accessories); p.set('accessoriesProbability', '100'); }
+    else { p.set('accessoriesProbability', '0'); }
+    p.set('eyes', 'happy'); p.set('mouth', 'smile'); p.set('facialHairProbability', '0');
+    return `${AVATAR_API}?${p.toString()}`;
+}
+
+function buildFriendUrl(cfg) {
+    const p = new URLSearchParams();
+    p.set('seed', cfg.seed || 'Friend');
+    p.set('skinColor', cfg.skinColor || DEFAULT_SKIN);
+    p.set('top', cfg.top || AVATAR_DEFAULTS.top); p.set('topProbability', '100');
+    p.set('hairColor', cfg.hairColor || AVATAR_DEFAULTS.hairColor);
+    p.set('clothing', cfg.clothing || AVATAR_DEFAULTS.clothing);
+    p.set('clothesColor', cfg.clothesColor || 'a7ffc4');
+    p.set('eyes', 'happy'); p.set('mouth', 'smile'); p.set('accessoriesProbability', '0'); p.set('facialHairProbability', '0');
+    return `${AVATAR_API}?${p.toString()}`;
+}
+
+// תמונת תצוגה מקדימה לבחירת גוון עור
+function skinPreviewUrl(skin) {
+    const p = new URLSearchParams();
+    p.set('seed', 'MyStar'); p.set('skinColor', skin);
+    p.set('top', AVATAR_DEFAULTS.top); p.set('topProbability', '100'); p.set('hairColor', AVATAR_DEFAULTS.hairColor);
+    p.set('clothing', AVATAR_DEFAULTS.clothing); p.set('clothesColor', AVATAR_DEFAULTS.clothesColor);
+    p.set('eyes', 'happy'); p.set('mouth', 'smile'); p.set('accessoriesProbability', '0'); p.set('facialHairProbability', '0');
+    return `${AVATAR_API}?${p.toString()}`;
+}
 
 // קטגוריות הארון (טאבים)
 const wardrobeCategories = [
@@ -264,21 +344,34 @@ function selectSubject(subjectKey) {
     showModal(`הנושא שונה בהצלחה ל-${subjectKey.toUpperCase()}! 🎯`); switchScreen('gameModes');
 }
 
-function setSlot(id, content, alwaysShow) {
+// מציג/מסתיר תמונת שכבה (כתר/נעליים/חיה) לפי אימוג'י
+function setImgSlot(id, emoji) {
     const el = document.getElementById(id); if(!el) return;
-    el.textContent = content || '';
-    el.style.display = (content || alwaysShow) ? 'flex' : 'none';
+    if (emoji) { el.src = twemojiUrl(emoji); el.style.display = 'block'; }
+    else { el.style.display = 'none'; el.removeAttribute('src'); }
 }
 
 function renderAvatarVisuals() {
-    setSlot('slot-avatar', activeOutfit.avatar || '🧍‍♀️', true);
-    setSlot('slot-hair', activeOutfit.hair);
-    setSlot('slot-glasses', activeOutfit.glasses);
-    setSlot('slot-crown', activeOutfit.crown);
-    setSlot('slot-cloth', activeOutfit.cloth);
-    setSlot('slot-shoes', activeOutfit.shoes ? activeOutfit.shoes + activeOutfit.shoes : '');
-    setSlot('slot-pet', activeOutfit.pet);
-    setSlot('slot-friend', activeOutfit.friend);
+    // אווטאר ראשי (תמונה קוהרנטית)
+    const avatarImg = document.getElementById('avatar-img');
+    if (avatarImg) {
+        const url = buildAvatarUrl();
+        if (avatarImg.src !== url) avatarImg.src = url;
+    }
+
+    // כתר / נעליים / חיה כתמונות-על
+    setImgSlot('crown-img', activeOutfit.crown);
+    setImgSlot('shoes-img', activeOutfit.shoes);
+    setImgSlot('pet-img', activeOutfit.pet);
+
+    // חבר = אווטאר שני
+    const friendImg = document.getElementById('friend-img');
+    if (friendImg) {
+        const fItem = equippedItemOf('friend');
+        const fCfg = fItem && AVATAR_MAP[fItem.id] && AVATAR_MAP[fItem.id].friend;
+        if (fCfg) { friendImg.src = buildFriendUrl(fCfg); friendImg.style.display = 'block'; }
+        else { friendImg.style.display = 'none'; }
+    }
 
     const stage = document.getElementById('room-stage');
     if(stage) stage.className = `room-stage w-full shadow-md mb-3 ${activeOutfit.background || 'canvas-default'}`;
@@ -392,18 +485,21 @@ function renderWardrobeTabs() {
     });
 }
 
-function makeWardrobeCard({ icon, owned, equipped, price, onPick }) {
+function makeWardrobeCard({ icon, imgSrc, owned, equipped, price, onPick }) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = `relative aspect-square rounded-2xl border-2 flex items-center justify-center cursor-pointer transition-transform active:scale-90 ${equipped ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-300'}`;
+    b.className = `relative aspect-square rounded-2xl border-2 flex items-center justify-center cursor-pointer transition-transform active:scale-90 overflow-hidden ${equipped ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-300'}`;
     let badge = '';
     if (equipped) {
-        badge = `<span class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center shadow">✓</span>`;
+        badge = `<span class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center shadow z-10">✓</span>`;
     } else if (!owned) {
-        badge = `<span class="absolute -top-1.5 -right-1.5 bg-amber-400 text-white text-[9px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow">${price}💎</span>`
-              + `<span class="absolute bottom-1 right-1.5 text-[10px]">🔒</span>`;
+        badge = `<span class="absolute -top-1.5 -right-1.5 bg-amber-400 text-white text-[9px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow z-10">${price}💎</span>`
+              + `<span class="absolute bottom-1 right-1.5 text-[10px] z-10">🔒</span>`;
     }
-    b.innerHTML = `<span class="text-3xl ${owned ? '' : 'opacity-40 grayscale'}">${icon}</span>${badge}`;
+    const visual = imgSrc
+        ? `<img src="${imgSrc}" alt="" draggable="false" class="w-full h-full object-contain ${owned ? '' : 'opacity-40 grayscale'}">`
+        : `<span class="text-3xl ${owned ? '' : 'opacity-40 grayscale'}">${icon}</span>`;
+    b.innerHTML = `${visual}${badge}`;
     b.onclick = onPick;
     return b;
 }
@@ -412,12 +508,12 @@ function renderWardrobeItems() {
     const grid = document.getElementById('wardrobe-items'); if(!grid) return;
     grid.innerHTML = '';
 
-    // קטגוריית "דמות" - בחירת דמות בסיס חופשית
+    // קטגוריית "דמות" - בחירת גוון עור עם תצוגה מקדימה
     if (activeWardrobeCat === 'character') {
-        baseAvatars.forEach(em => {
+        SKIN_TONES.forEach(skin => {
             grid.appendChild(makeWardrobeCard({
-                icon: em, owned: true, equipped: (activeOutfit.avatar || '🧍‍♀️') === em,
-                onPick: () => { activeOutfit.avatar = em; showSpeechBubble('Hi! 👋'); afterOutfitChange(true); }
+                imgSrc: skinPreviewUrl(skin), owned: true, equipped: activeOutfit.avatar === skin,
+                onPick: () => { activeOutfit.avatar = skin; showSpeechBubble('Hi! 👋'); afterOutfitChange(true); }
             }));
         });
         return;
@@ -466,7 +562,7 @@ function tryBuyItem(item) {
 }
 
 function randomizeOutfit() {
-    activeOutfit.avatar = baseAvatars[Math.floor(Math.random() * baseAvatars.length)];
+    activeOutfit.avatar = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)];
     ['hair', 'cloth', 'shoes', 'glasses', 'crown', 'pet', 'friend', 'background'].forEach(layer => {
         const owned = shopItems.filter(i => i.layer === layer && inventory.includes(i.id));
         if (!owned.length) return;
@@ -487,7 +583,7 @@ function resetOutfit() {
     activeOutfit.hair = activeOutfit.cloth = activeOutfit.shoes = '';
     activeOutfit.glasses = activeOutfit.crown = activeOutfit.pet = activeOutfit.friend = '';
     activeOutfit.background = 'canvas-default'; activeOutfit.env = '☁️'; activeOutfit.envLeft = '⭐';
-    activeOutfit.avatar = '🧍‍♀️';
+    activeOutfit.avatar = DEFAULT_SKIN;
     showSpeechBubble('All clean! 🧼');
     afterOutfitChange(false);
 }

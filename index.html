@@ -16,6 +16,8 @@
     <meta name="apple-mobile-web-app-title" content="English Academy">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://api.dicebear.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -67,18 +69,15 @@
                 <span id="ambient-decor" class="ambient ambient-right">☁️</span>
                 <span id="ambient-decor-left" class="ambient ambient-left">⭐</span>
 
-                <span id="slot-friend" class="char-slot slot-friend" style="display:none;"></span>
-                <span id="slot-pet" class="char-slot slot-pet" style="display:none;"></span>
+                <img id="friend-img" class="friend-img" alt="חבר" draggable="false" style="display:none;">
+                <img id="pet-img" class="pet-img" alt="חיית מחמד" draggable="false" style="display:none;">
 
                 <div id="character" class="character">
-                    <span id="slot-crown" class="char-slot slot-crown" style="display:none;"></span>
-                    <span id="slot-hair" class="char-slot slot-hair" style="display:none;"></span>
-                    <span id="slot-avatar" class="char-slot slot-avatar">🧍‍♀️</span>
-                    <span id="slot-glasses" class="char-slot slot-glasses" style="display:none;"></span>
-                    <span id="slot-cloth" class="char-slot slot-cloth" style="display:none;"></span>
-                    <span id="slot-shoes" class="char-slot slot-shoes" style="display:none;"></span>
+                    <img id="avatar-img" class="avatar-img" alt="הדמות שלי" draggable="false">
+                    <img id="crown-img" class="crown-img" alt="כתר" draggable="false" style="display:none;">
                 </div>
 
+                <img id="shoes-img" class="shoes-img" alt="נעליים" draggable="false" style="display:none;">
                 <div id="stage-ground" class="stage-ground"></div>
                 <div id="speech-bubble" class="speech-bubble hidden-screen"></div>
             </div>

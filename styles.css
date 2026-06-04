@@ -82,11 +82,11 @@ body {
 .ambient-left  { top: 30px; left: 22px;  font-size: 1.5rem; opacity: .55; animation: floaty 5s ease-in-out infinite .8s; }
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-/* הדמות - ערימת שכבות ממורכזת בתחתית הבמה */
+/* הדמות - תמונת אווטאר ממורכזת בתחתית הבמה */
 .character {
     position: absolute;
-    left: 50%; bottom: 38px;
-    width: 110px; height: 150px;
+    left: 50%; bottom: 14px;
+    width: 160px; height: 160px;
     transform: translateX(-50%);
     transform-origin: bottom center;
     animation: idle-bob 3s ease-in-out infinite;
@@ -106,22 +106,24 @@ body {
     100% { transform: translateX(-50%) translateY(0)    scale(1); }
 }
 
-/* שכבות לבוש - ממורכזות, כל אחת בגובה המתאים על הדמות */
-.char-slot {
-    position: absolute; left: 50%; transform: translateX(-50%);
-    display: flex; justify-content: center; align-items: center;
-    line-height: 1; white-space: nowrap; pointer-events: none;
-}
-.slot-avatar  { bottom: 0;    font-size: 5.6rem; z-index: 10; }
-.slot-shoes   { bottom: 2px;  font-size: 1.6rem; z-index: 25; letter-spacing: 2px; }
-.slot-cloth   { bottom: 20px; font-size: 3rem;   z-index: 20; }
-.slot-glasses { bottom: 54px; font-size: 1.7rem; z-index: 40; }
-.slot-hair    { bottom: 62px; font-size: 2.4rem; z-index: 30; }
-.slot-crown   { bottom: 78px; font-size: 2rem;   z-index: 50; }
+.avatar-img { width: 160px; height: 160px; display: block; pointer-events: none; }
 
-/* חיה וחבר - בפינות הבמה */
-.slot-pet    { bottom: 36px; right: 16px; left: auto; transform: none; font-size: 3.2rem; z-index: 8; animation: idle-bob 3.4s ease-in-out infinite .5s; }
-.slot-friend { bottom: 38px; left: 14px;  transform: none; font-size: 4.4rem; z-index: 7; animation: idle-bob 3.2s ease-in-out infinite .3s; }
+/* כתר - שכבת תמונה מעל הראש */
+.crown-img {
+    position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+    width: 56px; height: 56px; z-index: 20; pointer-events: none;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,.15));
+}
+
+/* נעליים - על הקרקע ליד הדמות */
+.shoes-img {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 50px; height: 50px; z-index: 9; pointer-events: none;
+}
+
+/* חיה וחבר - בפינות הבמה (תמונות) */
+.pet-img    { position: absolute; bottom: 30px; right: 12px; width: 70px; height: 70px; z-index: 8; pointer-events: none; animation: idle-bob 3.4s ease-in-out infinite .5s; }
+.friend-img { position: absolute; bottom: 16px; left: 6px;  width: 118px; height: 118px; z-index: 7; pointer-events: none; animation: idle-bob 3.2s ease-in-out infinite .3s; }
 
 /* בועת דיבור */
 .speech-bubble {
