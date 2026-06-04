@@ -213,7 +213,7 @@ Object.keys(subjectsData).forEach(key => {
 });
 
 // רווח קבוע לכל משחק (תואם את התוויות בתפריט)
-const GAME_REWARDS = { matching: 5, multipleChoice: 10, spelling: 15 };
+const GAME_REWARDS = { matching: 5, multipleChoice: 10, spelling: 15, memory: 10, scramble: 12, trueFalse: 8 };
 
 // מחלקת בסיס לכרטיסי משחק ההתאמה (כדי לא לשכפל מחרוזות ארוכות)
 const CARD_BASE_CLASS = "bg-white border-2 border-slate-200 rounded-xl py-3 px-1 font-bold text-slate-700 text-xs shadow-sm cursor-pointer transition-all flex items-center justify-center text-center h-16 break-words";
@@ -440,16 +440,21 @@ function afterOutfitChange(playFx) {
 }
 
 function switchScreen(screenId) {
-    ['menu', 'subjects', 'gameModes', 'matching', 'multipleChoice', 'spelling', 'shop', 'createWord', 'scoreboard', 'nameInput'].forEach(id => {
+    ['menu', 'subjects', 'gameModes', 'matching', 'multipleChoice', 'spelling', 'shop', 'createWord', 'scoreboard', 'nameInput', 'funGames', 'memory', 'scramble', 'trueFalse'].forEach(id => {
         const el = document.getElementById(`screen-${id}`); if(el) el.classList.add('hidden-screen');
     });
     const targetScreen = document.getElementById(`screen-${screenId}`); if(targetScreen) targetScreen.classList.remove('hidden-screen');
-    
-    ['games', 'room', 'scores', 'shop'].forEach(id => {
+
+    ['games', 'fun', 'room', 'scores', 'shop'].forEach(id => {
         const navBtn = document.getElementById(`nav-${id}`); if(navBtn) navBtn.className = "flex-1 py-3 text-center font-bold rounded-xl text-slate-500 cursor-pointer";
     });
-    
-    if(['subjects','gameModes','matching','multipleChoice','spelling','nameInput'].includes(screenId)) {
+
+    const FUN_GAMES = ['memory', 'scramble', 'trueFalse'];
+    const isFun = FUN_GAMES.includes(screenId) || screenId === 'funGames'
+        || (screenId === 'nameInput' && FUN_GAMES.includes(currentGameState));
+    if(isFun) {
+        const nFun = document.getElementById('nav-fun'); if(nFun) nFun.className = "flex-1 py-3 text-center font-bold rounded-xl text-white bg-indigo-600 cursor-pointer";
+    } else if(['subjects','gameModes','matching','multipleChoice','spelling','nameInput'].includes(screenId)) {
         const nGames = document.getElementById('nav-games'); if(nGames) nGames.className = "flex-1 py-3 text-center font-bold rounded-xl text-white bg-indigo-600 cursor-pointer";
     } else if(screenId === 'menu') {
         const nRoom = document.getElementById('nav-room'); if(nRoom) nRoom.className = "flex-1 py-3 text-center font-bold rounded-xl text-white bg-indigo-600 cursor-pointer";
@@ -736,19 +741,21 @@ function confirmNameAndStart() {
         const mins = String(Math.floor(diff / 60)).padStart(2, '0');
         const secs = String(diff % 60).padStart(2, '0');
         const str = `⏱️ זמן: ${mins}:${secs}`;
-        if (currentGameState === 'matching') {
-            const mtd = document.getElementById('match-timer-display'); if(mtd) mtd.innerText = str;
-        } else if (currentGameState === 'multipleChoice') {
-            const mcd = document.getElementById('mc-timer-display'); if(mcd) mcd.innerText = str;
-        } else if (currentGameState === 'spelling') {
-            const std = document.getElementById('sp-timer-display'); if(std) std.innerText = str;
-        }
+        const tid = TIMER_DISPLAY_IDS[currentGameState];
+        const el = tid && document.getElementById(tid); if(el) el.innerText = str;
     }, 1000);
 
-    if (currentGameState === 'matching') startMatchingGame();
-    else if (currentGameState === 'multipleChoice') startMultipleChoiceGame();
-    else if (currentGameState === 'spelling') startSpellingGame();
+    const starters = {
+        matching: startMatchingGame, multipleChoice: startMultipleChoiceGame, spelling: startSpellingGame,
+        memory: startMemoryGame, scramble: startScrambleGame, trueFalse: startTrueFalseGame
+    };
+    if (starters[currentGameState]) starters[currentGameState]();
 }
+
+const TIMER_DISPLAY_IDS = {
+    matching: 'match-timer-display', multipleChoice: 'mc-timer-display', spelling: 'sp-timer-display',
+    memory: 'mem-timer-display', scramble: 'scr-timer-display', trueFalse: 'tf-timer-display'
+};
 
 function stopTimerAndGetDuration() {
     clearInterval(gameTimerInterval);
@@ -758,8 +765,15 @@ function stopTimerAndGetDuration() {
     return `${mins}:${secs}`;
 }
 
+const FUN_GAME_MODES = ['memory', 'scramble', 'trueFalse'];
+function gameMenuScreenFor(mode) {
+    return FUN_GAME_MODES.includes(mode) ? 'funGames' : 'gameModes';
+}
+
 function exitCurrentGame() {
-    clearInterval(gameTimerInterval); window.speechSynthesis.cancel(); switchScreen('gameModes');
+    clearInterval(gameTimerInterval);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    switchScreen(gameMenuScreenFor(currentGameState));
 }
 
 function saveRecordToScoreboard(gameType) {
@@ -784,7 +798,7 @@ function finishGame(gameMode, gameLabel) {
     const reward = GAME_REWARDS[gameMode] || 0;
     saveRecordToScoreboard(gameLabel);
     showModal(`כל הכבוד! סיימתם את המשחק 🎉 קיבלתם ${reward} יהלומים 💎`, reward);
-    switchScreen('gameModes');
+    switchScreen(gameMenuScreenFor(gameMode));
 }
 
 function showScoreboardScreen() {
@@ -938,6 +952,206 @@ function checkSpellingAnswer() {
         inputElement.className = "w-full p-4 text-2xl text-center border-2 border-rose-500 bg-rose-50 rounded-xl font-bold mb-4 text-rose-700";
         setTimeout(() => { inputElement.className = "w-full p-4 text-2xl text-center border-2 border-slate-300 rounded-xl outline-none focus:border-indigo-500 font-bold mb-4"; }, 1200);
     }
+}
+
+/* ============ משחק: זיכרון ============ */
+const MEMORY_BACK_CLASS = "h-16 rounded-xl bg-indigo-500 text-white text-2xl font-bold shadow-sm cursor-pointer transition-transform active:scale-95 flex items-center justify-center";
+const MEMORY_FACE_CLASS = "h-16 rounded-xl bg-white border-2 border-indigo-300 text-slate-700 text-xs font-bold shadow-sm flex items-center justify-center text-center px-1 break-words";
+const MEMORY_MATCHED_CLASS = "h-16 rounded-xl bg-emerald-50 border-2 border-emerald-400 text-emerald-700 text-xs font-bold flex items-center justify-center text-center px-1 break-words opacity-70";
+
+let memoryFirstCard = null;
+let memoryLock = false;
+let memoryPairsLeft = 0;
+
+function startMemoryGame() {
+    switchScreen('memory');
+    memoryFirstCard = null; memoryLock = false;
+    const msd = document.getElementById('mem-score-display'); if(msd) msd.innerText = '🎯 שגיאות: 0';
+
+    const pairs = roundVocabulary.slice(0, 6); // עד 6 זוגות = 12 קלפים
+    memoryPairsLeft = pairs.length;
+    let cards = [];
+    pairs.forEach(w => {
+        cards.push({ id: w.id, text: w.english, type: 'eng' });
+        cards.push({ id: w.id, text: w.hebrew, type: 'heb' });
+    });
+    shuffleInPlace(cards);
+
+    const grid = document.getElementById('memory-grid'); if(!grid) return;
+    grid.innerHTML = '';
+    cards.forEach((card, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `mem-${idx}`;
+        btn.dataset.matched = 'false';
+        btn.className = MEMORY_BACK_CLASS;
+        btn.textContent = '❓';
+        btn.onclick = () => flipMemoryCard(btn, card);
+        grid.appendChild(btn);
+    });
+}
+
+function flipMemoryCard(btn, card) {
+    if (memoryLock || btn.dataset.matched === 'true') return;
+    if (memoryFirstCard && memoryFirstCard.btn === btn) return;
+
+    btn.className = MEMORY_FACE_CLASS;
+    btn.textContent = card.text;
+
+    if (!memoryFirstCard) { memoryFirstCard = { btn, card }; return; }
+
+    currentRoundTotalAttempts++;
+    const first = memoryFirstCard;
+    memoryFirstCard = null;
+
+    if (first.card.id === card.id && first.card.type !== card.type) {
+        memoryLock = true;
+        setTimeout(() => {
+            first.btn.className = MEMORY_MATCHED_CLASS; first.btn.dataset.matched = 'true';
+            btn.className = MEMORY_MATCHED_CLASS; btn.dataset.matched = 'true';
+            memoryPairsLeft--;
+            memoryLock = false;
+            if (memoryPairsLeft === 0) finishGame('memory', 'זיכרון');
+        }, 350);
+    } else {
+        currentRoundWrongAttempts++;
+        const msd = document.getElementById('mem-score-display'); if(msd) msd.innerText = `🎯 שגיאות: ${currentRoundWrongAttempts}`;
+        memoryLock = true;
+        setTimeout(() => {
+            first.btn.className = MEMORY_BACK_CLASS; first.btn.textContent = '❓';
+            btn.className = MEMORY_BACK_CLASS; btn.textContent = '❓';
+            memoryLock = false;
+        }, 800);
+    }
+}
+
+/* ============ משחק: פאזל אותיות ============ */
+const SCRAMBLE_TILE_CLASS = "w-10 h-12 rounded-lg bg-pink-500 text-white text-xl font-black shadow-sm cursor-pointer active:scale-90 transition-transform flex items-center justify-center";
+const SCRAMBLE_ANSWER_TILE_CLASS = "w-10 h-12 rounded-lg bg-white border-2 border-pink-400 text-pink-600 text-xl font-black shadow-sm cursor-pointer active:scale-90 transition-transform flex items-center justify-center";
+
+let scrambleAnswerTiles = [];
+
+function startScrambleGame() {
+    switchScreen('scramble');
+    // מילים באנגלית באותיות בלבד עד 9 תווים - ידידותי לילדים
+    const filtered = roundVocabulary.filter(w => /^[a-zA-Z]+$/.test(w.english) && w.english.length <= 9);
+    if (filtered.length) roundVocabulary = filtered;
+    roundVocabulary = roundVocabulary.slice(0, 10);
+    currentWordIndex = 0;
+    renderScrambleRound();
+}
+
+function renderScrambleRound() {
+    const word = roundVocabulary[currentWordIndex];
+    const shw = document.getElementById('scr-hebrew-word'); if(shw) shw.textContent = word.hebrew;
+    const ssd = document.getElementById('scr-score-display'); if(ssd) ssd.innerText = `📝 שאלה: ${currentWordIndex + 1}/${roundVocabulary.length} | שגיאות: ${currentRoundWrongAttempts}`;
+
+    scrambleAnswerTiles = [];
+    const answer = document.getElementById('scramble-answer'); if(answer) answer.innerHTML = '';
+    const pool = document.getElementById('scramble-pool'); if(!pool) return;
+    pool.innerHTML = '';
+
+    const letters = word.english.toUpperCase().split('');
+    let shuffled = shuffleInPlace(letters.slice());
+    if (letters.length > 1 && shuffled.join('') === letters.join('')) shuffled = shuffleInPlace(letters.slice());
+    shuffled.forEach(ch => {
+        const tile = document.createElement('button');
+        tile.className = SCRAMBLE_TILE_CLASS;
+        tile.textContent = ch;
+        tile.onclick = () => moveScrambleTile(tile, ch);
+        pool.appendChild(tile);
+    });
+    setTimeout(speakCurrentWord, 300);
+}
+
+function moveScrambleTile(poolTile, ch) {
+    const answer = document.getElementById('scramble-answer'); if(!answer) return;
+    poolTile.style.display = 'none';
+    const aTile = document.createElement('button');
+    aTile.className = SCRAMBLE_ANSWER_TILE_CLASS;
+    aTile.textContent = ch;
+    aTile.onclick = () => {
+        aTile.remove();
+        poolTile.style.display = '';
+        scrambleAnswerTiles = scrambleAnswerTiles.filter(t => t.aTile !== aTile);
+    };
+    answer.appendChild(aTile);
+    scrambleAnswerTiles.push({ ch, aTile, poolTile });
+}
+
+function clearScrambleAnswer() {
+    scrambleAnswerTiles.forEach(t => { t.aTile.remove(); t.poolTile.style.display = ''; });
+    scrambleAnswerTiles = [];
+}
+
+function checkScrambleAnswer() {
+    const built = scrambleAnswerTiles.map(t => t.ch).join('').toUpperCase();
+    if (!built) return;
+    const word = roundVocabulary[currentWordIndex];
+    currentRoundTotalAttempts++;
+    const box = document.getElementById('scramble-answer');
+
+    if (built === word.english.toUpperCase()) {
+        if (box) box.classList.add('answer-correct');
+        setTimeout(() => {
+            if (box) box.classList.remove('answer-correct');
+            if (currentWordIndex < roundVocabulary.length - 1) { currentWordIndex++; renderScrambleRound(); }
+            else finishGame('scramble', 'פאזל אותיות');
+        }, 600);
+    } else {
+        currentRoundWrongAttempts++;
+        const ssd = document.getElementById('scr-score-display'); if(ssd) ssd.innerText = `📝 שאלה: ${currentWordIndex + 1}/${roundVocabulary.length} | שגיאות: ${currentRoundWrongAttempts}`;
+        if (box) { box.classList.add('shake'); setTimeout(() => box.classList.remove('shake'), 500); }
+    }
+}
+
+/* ============ משחק: נכון או לא ============ */
+let tfTotal = 10;
+let tfCount = 0;
+let tfCurrentIsCorrect = false;
+let tfLock = false;
+
+function startTrueFalseGame() {
+    switchScreen('trueFalse');
+    tfCount = 0;
+    tfTotal = Math.min(10, Math.max(roundVocabulary.length, 1));
+    tfLock = false;
+    renderTrueFalseRound();
+}
+
+function renderTrueFalseRound() {
+    const ssd = document.getElementById('tf-score-display'); if(ssd) ssd.innerText = `📝 שאלה: ${tfCount + 1}/${tfTotal} | שגיאות: ${currentRoundWrongAttempts}`;
+    const word = roundVocabulary[tfCount % roundVocabulary.length];
+
+    let hebrew = word.hebrew;
+    let showCorrect = Math.random() < 0.5;
+    if (!showCorrect && roundVocabulary.length > 1) {
+        let other, guard = 0;
+        do { other = roundVocabulary[Math.floor(Math.random() * roundVocabulary.length)]; guard++; }
+        while (other.hebrew === word.hebrew && guard < 20);
+        hebrew = other.hebrew;
+    }
+    tfCurrentIsCorrect = (hebrew === word.hebrew);
+
+    const en = document.getElementById('tf-english'); if(en) en.textContent = word.english;
+    const he = document.getElementById('tf-hebrew'); if(he) he.textContent = hebrew;
+}
+
+function answerTrueFalse(userSaysCorrect) {
+    if (tfLock) return;
+    tfLock = true;
+    currentRoundTotalAttempts++;
+    const correct = (userSaysCorrect === tfCurrentIsCorrect);
+    if (!correct) currentRoundWrongAttempts++;
+
+    const card = document.getElementById('tf-card');
+    if (card) card.classList.add(correct ? 'answer-correct' : 'answer-wrong');
+    setTimeout(() => {
+        if (card) card.classList.remove('answer-correct', 'answer-wrong');
+        tfLock = false;
+        tfCount++;
+        if (tfCount >= tfTotal) { finishGame('trueFalse', 'נכון או לא'); return; }
+        renderTrueFalseRound();
+    }, 500);
 }
 
 function showModal(text, reward = 0, emoji = '🎉') {
